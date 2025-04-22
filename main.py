@@ -48,7 +48,7 @@ stdscr.nodelay(True)
 curses.curs_set(0)
 
 player_char = '@'
-blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@"]
+blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I"]
 
 offset = 2
 playing = True
@@ -60,12 +60,15 @@ alert1 = " * Naciśnij P aby przerwać rozgrywkę."
     
 items = []
 defeat_text = ""
-food_bar = 10
+health_bar = 5
+food_bar = 5
 armor_bar = 1
 attack_bar = 1
+health_bar_symbol = "*"
 food_bar_symbol = "+"
 armor_bar_symbol = "╬"
 attack_bar_symbol = "╇"
+miecz = "miecz"
 
 maxl = len(map_1)
 maxc = len(map_1[0])
@@ -247,13 +250,15 @@ def draw_ui():
         for j in range(len(ui_2_map[0])):
             ui_2.addch(i,j, ui_2_map[i][j])
     ui_2.addstr(2,3,f"[{player_x}], [{player_y}]")
-    ui_2.addstr(4,3,f"Food: {food_bar_symbol*food_bar}")
-    ui_2.addstr(6,3,f"Armor: {armor_bar_symbol*armor_bar}")
-    ui_2.addstr(8,3,f"Attack: {attack_bar_symbol*attack_bar}")
+    ui_2.addstr(4,3,f"health: {health_bar_symbol*health_bar}")
+    ui_2.addstr(6,3,f"Food: {food_bar_symbol*food_bar}")
+    ui_2.addstr(8,3,f"Armor: {armor_bar_symbol*armor_bar}")
+    ui_2.addstr(10,3,f"Attack: {attack_bar_symbol*attack_bar}")
     for i in range(len(ui_3_map)):
         for j in range(len(ui_3_map[0])):
             ui_3.addch(i,j, ui_3_map[i][j])
-    ui_3.addstr(2,2, "Inventory", curses.A_UNDERLINE | curses.A_BOLD)
+    ui_3.addstr(2,2, "Inventory :", curses.A_UNDERLINE | curses.A_BOLD)
+    ui_3.addstr(4,2,f"{inventory}")
 
     for i in range(len(ui_5_map)):
         for j in range(len(ui_5_map[0])):
@@ -274,13 +279,6 @@ def clear_ui():
     ui_5.clear() 
     
 
-def random_position():
-    l = random.randint(0,maxl)
-    c = random.randint(0,maxc)
-    while world[l][c] != ' ': # TODO: a bug if the whole world is occupied
-        l = random.randint(0,maxl-1)
-        c = random.randint(0,maxc-1)
-    return l,c
 
 def in_range(v, vmin, vmax):
     # Sprawdzanie granic
@@ -318,11 +316,42 @@ def draw_menu(stdscr, selected_option):
             stdscr.addstr(y, x, option)
     stdscr.refresh()
 
+
+def draw_settings(stdscr, selected_option1):
+    global windowl, windowc
+    
+    settings = ["Rozpocznij z mieczem","rozpocznij z armorem","nwm"]
+    
+    title = "Ustawienia"
+    # Pozycja tytułu menu
+    title_x = (windowc // 2)-5
+    title_y = (windowl // 2) -2
+    
+    # Dodanie tytułu menu
+    stdscr.addstr(title_y, title_x, title, curses.A_BOLD)
+    
+    # Wyśrodkowanie menu
+    start_x = (windowc // 2) -4
+    start_y = windowl // 2
+    
+    # Rysowanie menu
+    for id_settings, option in enumerate(settings):
+        x = start_x
+        y = start_y + id_settings
+        if id_settings == selected_option1:
+            stdscr.addstr(y, x, option, curses.A_REVERSE)
+        else:
+            stdscr.addstr(y, x, option)
+    stdscr.refresh()
+
+
+
 def menu():
     # Opcje menu
     menu_options = ["Zagraj", "Ustawienia", "Informacje", "Wyjdź"]
-    selected_option = 0
     
+    selected_option = 0
+    selected_option1 = 0
     while True:
         draw_menu(stdscr, selected_option)
         
@@ -341,10 +370,25 @@ def menu():
                 
                 break
             elif selected_option == 1:  # Ustawienia
+                settings_options = ["Rozpocznij z mieczem","rozpocznij z armorem","nwm"]
                 stdscr.clear()
                 stdscr.addstr(0, 0, "Menu ustawień...")
+                stdscr.addstr(1, 0, "B aby wrocic")
+                key = stdscr.getch()
+                draw_settings(stdscr, selected_option1)
+                if key == curses.KEY_DOWN:  # Strzałka w dół
+                    selected_option = (selected_option + 1) % len(settings_options)
+                elif key == curses.KEY_UP:  # Strzałka w górę
+                    selected_option = (selected_option - 1) % len(settings_options)
                 stdscr.refresh()
                 stdscr.getch()
+                while True:
+                    try:
+                        c = stdscr.getkey()
+                    except:
+                        c = ''
+                    if c == "b":
+                        main()
                 break
             elif selected_option == 2:  # Informacje
                 stdscr.clear()
@@ -387,6 +431,48 @@ def pause_game(): # Zatrzymywanie gry
             break
         elif c == "q":
             sys.exit()
+
+def dod_jedz():
+    
+    global food_bar
+    global alert
+    if food_bar <=9:
+        x = food_bar +1 
+        global alert
+        stdscr.addstr(39,4, "")
+        alert = "dodano jedzenie"
+        food_bar = x
+    else:
+        alert = "jedzonko na full"
+    refresh_ui()
+        
+
+def miks_lecz():
+    global health_bar
+    global alert
+    if health_bar <=9: 
+        x = health_bar +1
+        global alert
+        stdscr.addstr(39,4, "")
+        alert = "dodano zycie"
+        health_bar = x
+    else:
+        alert = "hp na full"
+
+    refresh_ui()
+    
+
+def dod_miecz():
+    
+    global inventory
+    global alert
+    if "miecz" in inventory:
+    
+        alert = "masz juz miecz"
+    else:    
+        x = "miecz"
+        inventory.append(x)
+
             
 def main():
     global playing
@@ -405,6 +491,13 @@ def main():
         elif c == 'e': # Interakcja z przedmiotami, npctami
             if current_map == 1 and player_x in [20,21,22] and player_y in [25,26,27]:
                 interact_npc_1()
+            if current_map == 1 and player_x in [95,96] and player_y in [31,32]:
+                dod_jedz()
+            if current_map == 1 and player_x in [91,92] and player_y in [31,32]:
+                miks_lecz()
+            if current_map == 1 and player_x in [37,38,39] and player_y in [22,23,24]:
+                dod_miecz()
+        
                 
             pass
         elif c == 'q':
