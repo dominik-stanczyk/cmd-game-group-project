@@ -69,6 +69,8 @@ food_bar_symbol = "+"
 armor_bar_symbol = "╬"
 attack_bar_symbol = "╇"
 miecz = "miecz"
+klasa = ""
+portfel = 5
 
 maxl = len(map_1)
 maxc = len(map_1[0])
@@ -245,6 +247,7 @@ def draw_ui():
         for j in range(len(ui_1_map[0])):
             ui_1.addch(i,j, ui_1_map[i][j])
     ui_1.addstr(1,2,f"Obecna mapa: {current_map}")
+    ui_1.addstr(3,2,f"Klasa postaci: {klasa}")
     
     for i in range(len(ui_2_map)):
         for j in range(len(ui_2_map[0])):
@@ -254,6 +257,7 @@ def draw_ui():
     ui_2.addstr(6,3,f"Food: {food_bar_symbol*food_bar}")
     ui_2.addstr(8,3,f"Armor: {armor_bar_symbol*armor_bar}")
     ui_2.addstr(10,3,f"Attack: {attack_bar_symbol*attack_bar}")
+    ui_2.addstr(12,3,f"Portfel: ${portfel}.00")
     for i in range(len(ui_3_map)):
         for j in range(len(ui_3_map[0])):
             ui_3.addch(i,j, ui_3_map[i][j])
@@ -320,11 +324,11 @@ def draw_menu(stdscr, selected_option):
 def draw_settings(stdscr, selected_option1):
     global windowl, windowc
     
-    settings = ["Rozpocznij z mieczem","rozpocznij z armorem","nwm"]
+    settings = ["Wojownik","Kupiec","Cywil"]
     
-    title = "Ustawienia"
+    title = "Wybierz klasę postaci"
     # Pozycja tytułu menu
-    title_x = (windowc // 2)-5
+    title_x = (windowc // 2)-10
     title_y = (windowl // 2) -2
     
     # Dodanie tytułu menu
@@ -344,8 +348,35 @@ def draw_settings(stdscr, selected_option1):
             stdscr.addstr(y, x, option)
     stdscr.refresh()
 
-
-
+def settings():
+    global klasa, portfel
+    # Opcje menu
+    settings_options = ["Wojownik","Kupiec","Cywil"]
+    
+    selected_option = 0
+    selected_option1 = 0
+    while True:
+        draw_settings(stdscr, selected_option)
+        
+        key = stdscr.getch() # Odczytujemy przycisk (strzałka w górę i w dół)
+        
+        if key == curses.KEY_DOWN:  # Strzałka w dół
+            selected_option = (selected_option + 1) % len(settings_options)
+        elif key == curses.KEY_UP:  # Strzałka w górę
+            selected_option = (selected_option - 1) % len(settings_options)
+        elif key == 10:  # Enter
+            if selected_option == 0:  # Zagraj
+                klasa = "Wojownik"
+                break
+            elif selected_option == 1:
+                klasa = "Kupiec"
+                portfel = 20
+                break
+            elif selected_option == 2:
+                klasa = "Cywil"
+                break
+        stdscr.clear()
+        
 def menu():
     # Opcje menu
     menu_options = ["Zagraj", "Ustawienia", "Informacje", "Wyjdź"]
@@ -363,6 +394,7 @@ def menu():
             selected_option = (selected_option - 1) % len(menu_options)
         elif key == 10:  # Enter
             if selected_option == 0:  # Zagraj
+                settings()
                 stdscr.clear()
                 draw_map_1()
                 draw_ui()
@@ -370,18 +402,9 @@ def menu():
                 
                 break
             elif selected_option == 1:  # Ustawienia
-                settings_options = ["Rozpocznij z mieczem","rozpocznij z armorem","nwm"]
                 stdscr.clear()
                 stdscr.addstr(0, 0, "Menu ustawień...")
                 stdscr.addstr(1, 0, "B aby wrocic")
-                key = stdscr.getch()
-                draw_settings(stdscr, selected_option1)
-                if key == curses.KEY_DOWN:  # Strzałka w dół
-                    selected_option = (selected_option + 1) % len(settings_options)
-                elif key == curses.KEY_UP:  # Strzałka w górę
-                    selected_option = (selected_option - 1) % len(settings_options)
-                stdscr.refresh()
-                stdscr.getch()
                 while True:
                     try:
                         c = stdscr.getkey()
@@ -434,32 +457,39 @@ def pause_game(): # Zatrzymywanie gry
 
 def dod_jedz():
     
-    global food_bar
+    global food_bar, alert, portfel
     global alert
-    if food_bar <=9:
-        x = food_bar +1 
-        global alert
-        stdscr.addstr(39,4, "")
-        alert = "dodano jedzenie"
-        food_bar = x
+    if portfel >=1:
+        portfel -=1
+        if food_bar <=9:
+            x = food_bar +1 
+            global alert
+            stdscr.addstr(39,4, "")
+            alert = "dodano jedzenie"
+            food_bar = x
+        else:
+            alert = "jedzonko na full"
+        refresh_ui()
     else:
-        alert = "jedzonko na full"
-    refresh_ui()
+        alert = "Brak pieniędzy"
         
 
 def miks_lecz():
-    global health_bar
-    global alert
-    if health_bar <=9: 
-        x = health_bar +1
-        global alert
-        stdscr.addstr(39,4, "")
-        alert = "dodano zycie"
-        health_bar = x
+    global health_bar, alert, portfel
+    
+    if portfel >=2:
+        portfel -=2
+        if health_bar <=9: 
+            x = health_bar +1
+            global alert
+            stdscr.addstr(39,4, "")
+            alert = "dodano zycie"
+            health_bar = x
+        else:
+            alert = "hp na full"
+        refresh_ui()
     else:
-        alert = "hp na full"
-
-    refresh_ui()
+        alert = "Brak pieniędzy"
     
 
 def dod_miecz():
