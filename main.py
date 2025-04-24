@@ -49,7 +49,7 @@ stdscr.nodelay(True)
 curses.curs_set(0)
 
 player_char = '@'
-blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I","P","G","O","W","V"]
+blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I","P","G","O","W","V","M"]
 
 offset = 2
 playing = True
@@ -76,6 +76,8 @@ food_bar_symbol = "+"
 armor_bar_symbol = "╬"
 attack_bar_symbol = "╇"
 miecz = "miecz"
+portfel = 5
+klasa = ""
 
 maxl = len(map_1)
 maxc = len(map_1[0])
@@ -115,7 +117,7 @@ ui_5 = curses.newwin(3, 51, 46, 143)
 def interact_npc_1():
     global alert
     stdscr.addstr(39,4, "")
-    alert = "Witaj przybyszu"
+    alert = " * Witaj przybyszu"
     refresh_ui()
 
 def check_defeat():
@@ -147,7 +149,7 @@ def defeat():
             sys.exit()
     
 
-def draw_clock(): # Gra działa w około 50 klatkach na sekundę (time.sleep(0.02)), co około 45 klatek (zmienna czas) wartość minuty się zwiększa
+def draw_clock(): # Gra działa w około 50 klatkach na sekundę (time.sleep(0.02))
     global czas, minuta, godzina, dzien, playing, alert, food_bar, health_bar
     czas += 1
     # Ważna notka działa odejmowenie zdrowia po utracie paska jedzonka
@@ -278,6 +280,7 @@ def draw_ui():
     ui_2.addstr(6,3,f"Food: {food_bar_symbol*food_bar}")
     ui_2.addstr(8,3,f"Armor: {armor_bar_symbol*armor_bar}")
     ui_2.addstr(10,3,f"Attack: {attack_bar_symbol*attack_bar}")
+    ui_2.addstr(12,3,f"Portfel: ${portfel}.00")
     for i in range(len(ui_3_map)):
         for j in range(len(ui_3_map[0])):
             ui_3.addch(i,j, ui_3_map[i][j])
@@ -316,7 +319,7 @@ def in_range(v, vmin, vmax):
 def draw_menu(stdscr, selected_option):
     global windowl, windowc
     
-    menu = ["Zagraj", "Ustawienia", "Informacje", "Wyjdź"]
+    menu = ["Zagraj", "Informacje", "Wyjdź"]
     
     title = "Main Menu"
     # Pozycja tytułu menu
@@ -341,37 +344,9 @@ def draw_menu(stdscr, selected_option):
     stdscr.refresh()
 
 
-def draw_settings(stdscr, selected_option1):
-    global windowl, windowc
-
-    settings = ["Rozpocznij z mieczem","rozpocznij z armorem"]
-    title = "Ustawienia"
-
-    title_x = (windowc // 2)-5
-    title_y = (windowl // 2) -2
-
-
-    stdscr.addstr(title_y, title_x, title, curses.A_BOLD)
-
-
-    start_x = (windowc // 2) -4
-    start_y = windowl // 2
-
-
-    for id_settings, option in enumerate(settings):
-        x = start_x
-        y = start_y + id_settings
-        if id_settings == selected_option1:
-            stdscr.addstr(y, x, option, curses.A_REVERSE)
-        else:
-            stdscr.addstr(y, x, option)
-    stdscr.refresh()
-
-
-
 def menu():
 
-    menu_options = ["Zagraj", "Ustawienia", "Informacje", "Wyjdź"]
+    menu_options = ["Zagraj", "Informacje", "Wyjdź"]
 
     selected_option = 0
     selected_option1 = 0
@@ -386,31 +361,14 @@ def menu():
             selected_option = (selected_option - 1) % len(menu_options)
         elif key == 10:
             if selected_option == 0:
+                settings()
                 stdscr.clear()
                 draw_map_1()
                 draw_ui()
                 refresh_ui()
-
                 break
+            
             elif selected_option == 1:
-
-                while True:
-                    settings_options = ["Rozpocznij z mieczem","rozpocznij z armorem"]
-                    stdscr.clear()
-                    draw_settings(stdscr, selected_option1)
-                    stdscr.addstr(0, 0, "Menu ustawień...")
-                    stdscr.addstr(1, 0, "B aby wrócić")
-                    stdscr.refresh()
-
-
-                    key = stdscr.getch()
-                    if key == curses.KEY_DOWN:
-                        selected_option1 = (selected_option1 + 1) % len(settings_options)
-                    elif key == curses.KEY_UP:
-                        selected_option1 = (selected_option1 - 1) % len(settings_options)
-                    elif key == ord('b'):
-                        break
-            elif selected_option == 2:
                 stdscr.clear()
                 stdscr.addstr( 4, 5, " - INFORMACJE, wciśnij B aby powrócić")
                 stdscr.refresh()
@@ -419,9 +377,65 @@ def menu():
                     key = stdscr.getch()
                     if key == ord('b'):
                         main()
-            elif selected_option == 3: 
+            elif selected_option == 2: 
                 sys.exit()
 
+        stdscr.clear()
+        
+def draw_settings(stdscr, selected_option1): #rysowanie wyboru klasy postaci
+    global windowl, windowc
+    
+    settings = ["Wojownik","Kupiec","Cywil"]
+    
+    title = "Wybierz klasę postaci"
+    # Pozycja tytułu menu
+    title_x = (windowc // 2)-10
+    title_y = (windowl // 2) -2
+    
+    # Dodanie tytułu menu
+    stdscr.addstr(title_y, title_x, title, curses.A_BOLD)
+    
+    # Wyśrodkowanie menu
+    start_x = (windowc // 2) -4
+    start_y = windowl // 2
+    
+    # Rysowanie menu
+    for id_settings, option in enumerate(settings):
+        x = start_x
+        y = start_y + id_settings
+        if id_settings == selected_option1:
+            stdscr.addstr(y, x, option, curses.A_REVERSE)
+        else:
+            stdscr.addstr(y, x, option)
+    stdscr.refresh()
+
+def settings(): # wybor klasy postaci
+    global klasa, portfel
+    # Opcje menu
+    settings_options = ["Wojownik","Kupiec","Cywil"]
+    
+    selected_option = 0
+    selected_option1 = 0
+    while True:
+        draw_settings(stdscr, selected_option)
+        
+        key = stdscr.getch() # Odczytujemy przycisk (strzałka w górę i w dół)
+        
+        if key == curses.KEY_DOWN:  # Strzałka w dół
+            selected_option = (selected_option + 1) % len(settings_options)
+        elif key == curses.KEY_UP:  # Strzałka w górę
+            selected_option = (selected_option - 1) % len(settings_options)
+        elif key == 10:  # Enter
+            if selected_option == 0:  # Zagraj
+                klasa = "Wojownik"
+                break
+            elif selected_option == 1:
+                klasa = "Kupiec"
+                portfel = 20
+                break
+            elif selected_option == 2:
+                klasa = "Cywil"
+                break
         stdscr.clear()
         
 def pause_game(): # Zatrzymywanie gry
@@ -451,42 +465,47 @@ def pause_game(): # Zatrzymywanie gry
 
 def dod_jedz():
     
-    global food_bar
-    global alert
-    if food_bar <=9:
-        x = food_bar +1 
-        global alert
-        stdscr.addstr(39,4, "")
-        alert = "dodano jedzenie"
-        food_bar = x
+    global food_bar, portfel, alert
+    if (portfel -1) >=0:
+        if food_bar <=9:
+            portfel -=1
+            x = food_bar +1 
+            global alert
+            stdscr.addstr(39,4, "")
+            alert = " * dodano jedzenie"
+            food_bar = x
+        else:
+            alert = " * jedzonko na full"
+        refresh_ui()
     else:
-        alert = "jedzonko na full"
-    refresh_ui()
-        
+        alert(" * Brak pieniędzy")
 
 def miks_lecz():
-    global health_bar
-    global alert
-    if health_bar <=9: 
-        x = health_bar +1
-        global alert
-        stdscr.addstr(39,4, "")
-        alert = "dodano zycie"
-        health_bar = x
+    global health_bar, portfel, alert
+    if (portfel - 2) >= 0:
+        portfel -= 2 
+        if health_bar <=9: 
+            x = health_bar +1
+            global alert
+            stdscr.addstr(39,4, "")
+            alert = " * dodano zycie"
+            health_bar = x
+        else:
+            alert = " * hp na full"
+        refresh_ui()
     else:
-        alert = "hp na full"
-
-    refresh_ui()
+        alert = " * Brak pieniędzy"
     
 
 def dod_miecz():
     
-    global inventory
-    global alert
+    global inventory, posiadanie_miecz, alert
+    posiadanie_miecz = True
     if "miecz" in inventory:
     
-        alert = "masz juz miecz"
+        alert = " * masz juz miecz"
     else:    
+        alert = " * wyciągnięto miecz ze skały"
         x = "miecz"
         inventory.append(x)
 
@@ -671,5 +690,3 @@ def main():
         time.sleep(0.02)
 
 main()
-
-        
