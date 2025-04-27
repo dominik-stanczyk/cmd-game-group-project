@@ -78,6 +78,8 @@ attack_bar_symbol = "╇"
 miecz = "miecz"
 portfel = 5
 klasa = ""
+nazwa_mapy = "Miasteczko"
+posiadanie_kilof = False
 
 maxl = len(map_1)
 maxc = len(map_1[0])
@@ -97,14 +99,18 @@ encountered_monster = None
 
 curses.start_color() # Kolory
 curses.init_color(8, 500, 500, 500)
+curses.init_color(9, 1000, 1000, 0)
 curses.init_pair(1, curses.COLOR_GREEN, curses.COLOR_BLACK)
 curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
 curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
 curses.init_pair(4, 8, curses.COLOR_BLACK)
+curses.init_pair(5, 9, curses.COLOR_BLACK)
+
 green = curses.color_pair(1)
 white = curses.color_pair(2)
 blue = curses.color_pair(3)
 gray = curses.color_pair(4)
+yellow = curses.color_pair(5)
 
 ui_1 = curses.newwin(5, 51, 2, 143)
 ui_2 = curses.newwin(15, 51, 7, 143)
@@ -120,12 +126,26 @@ def interact_npc_1():
     alert = " * Witaj przybyszu"
     refresh_ui()
 
+def interact_npc_2():
+    global alert3, inventory, posiadanie_kilof
+    
+    if not posiadanie_kilof:
+        inventory.append("kilof")
+        posiadanie_kilof = True
+    alert3 = " * Zdobyto kilof"
+    refresh_ui()
+def interact_kopalnia():
+    global portfel, food_bar
+    portfel += 5
+    food_bar -= 1
+    refresh_ui()
+
 def check_defeat():
     global playing, defeat_text
     if dzien >= 4:
         defeat_text = "Skończył ci się czas."
         defeat()
-    elif health_bar == 0:
+    elif food_bar == 0:
         defeat_text = "Pamiętaj aby jeść."
         defeat()
     elif armor_bar == 0:
@@ -174,13 +194,7 @@ def draw_clock(): # Gra działa w około 50 klatkach na sekundę (time.sleep(0.0
     current_time = time.strftime("%H:%M:%S")  # Bieżący czas w formacie godzin:minut:sekund
     ui_5.addstr(1, 3, f"{godzina:02}:{minuta:02}  <Dzień {dzien}>", curses.A_BOLD)  # Wyświetl czas
 
-def draw_map():
-    if current_map == 0:
-        draw_map_1()  # Rysujemy mapę 1
-    elif current_map == 1:
-        draw_map_2()  # Rysujemy mapę 2
-    elif current_map == 2:
-        draw_map_3()  # Rysujemy mapę 3
+
 def draw_map_1():
     
     for i in range(maxl):
@@ -191,6 +205,8 @@ def draw_map_1():
                 stdscr.addch(i+offset, j+offset, map_1[i][j], green)
             elif map_1[i][j] == "_":
                 stdscr.addch(i+offset, j+offset, map_1[i][j], white | curses.A_BOLD)
+            elif map_1[i][j] == "$":
+                stdscr.addch(i+offset, j+offset, map_1[i][j], yellow | curses.A_BOLD)
             else:
                 stdscr.addch(i+offset, j+offset, map_1[i][j], white )
     stdscr.addch(player_y+offset, player_x+offset, player_char, green)
@@ -213,9 +229,14 @@ def draw_map_2():
                 stdscr.addch(i+offset, j+offset, map_2[i][j], green)
             elif map_2[i][j] == "_":
                 stdscr.addch(i+offset, j+offset, map_2[i][j], white | curses.A_BOLD)
+            elif map_1[i][j] == "$":
+                stdscr.addch(i+offset, j+offset, map_1[i][j], yellow | curses.A_BOLD)
             else:
                 stdscr.addch(i+offset, j+offset, map_2[i][j], white )
     stdscr.addch(player_y+offset, player_x+offset, player_char, green)
+    
+    stdscr.addstr(41,4, alert3, gray)
+    stdscr.addstr(42,4, alert4, gray)
     
 def draw_map_3():
     for i in range(maxl):
@@ -226,6 +247,8 @@ def draw_map_3():
                 stdscr.addch(i+offset, j+offset, map_3[i][j], green)
             elif map_3[i][j] == "_":
                 stdscr.addch(i+offset, j+offset, map_3[i][j], white | curses.A_BOLD)
+            elif map_1[i][j] == "$":
+                stdscr.addch(i+offset, j+offset, map_1[i][j], yellow | curses.A_BOLD)
             else:
                 stdscr.addch(i+offset, j+offset, map_3[i][j], white )
     stdscr.addch(player_y+offset, player_x+offset, player_char, green)
@@ -264,13 +287,12 @@ def move(c):
         player_y = 2
         current_map = 1
         
-    draw_map()
     
 def draw_ui():
     for i in range(len(ui_1_map)):
         for j in range(len(ui_1_map[0])):
             ui_1.addch(i,j, ui_1_map[i][j])
-    ui_1.addstr(1,2,f"Obecna mapa: {current_map}")
+    ui_1.addstr(1,2,f"Obecna mapa: {current_map}  ({nazwa_mapy})")
     
     for i in range(len(ui_2_map)):
         for j in range(len(ui_2_map[0])):
@@ -478,7 +500,7 @@ def dod_jedz():
             alert = " * jedzonko na full"
         refresh_ui()
     else:
-        alert(" * Brak pieniędzy")
+        alert = " * Brak pieniędzy"
 
 def miks_lecz():
     global health_bar, portfel, alert
@@ -615,7 +637,7 @@ def rozpocznij_walke(monster):
     refresh_ui()
 
 def main():
-    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7  # dodajemy alert2 jako globalną
+    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy  # dodajemy alert2 jako globalną
     menu()
     while playing:
         # odczytywanie wartości z klawiatury
@@ -634,6 +656,17 @@ def main():
         elif c == 'e':  # Interakcja z przedmiotami, npcami, potworami
             if current_map == 1 and player_x in [20,21,22] and player_y in [25,26,27]:
                 interact_npc_1()
+            elif current_map == 2 and player_x in [21,22] and player_y in [11,10]:
+                interact_npc_2()
+            
+            elif current_map == 2 and player_x in [45,46,47] and player_y in [22,23,24]:
+                if posiadanie_kilof:
+                    interact_kopalnia()
+                    alert3 = ""
+                else:
+                    alert3 = " * Nie posiadasz kilofa."
+                
+                
             elif current_map == 1 and player_x in [95,96] and player_y in [31,32]:
                 dod_jedz()
             elif current_map == 1 and player_x in [91,92] and player_y in [31,32]:
@@ -661,9 +694,6 @@ def main():
                 alert3 = "Czy chcesz walczyć? (y/n)"
                 refresh_ui()
 
-        elif c == 'q':
-            pass  # jedzenie, jeśli pełny to wypisuje MAX
-
         elif c == 'y':
             if encountered_monster:
                 rozpocznij_walke(encountered_monster)
@@ -680,10 +710,13 @@ def main():
         # Rysowanie map i UI
         if current_map == 1:
             draw_map_1()
+            nazwa_mapy = "Miasteczko"
         elif current_map == 2:
             draw_map_2()
+            nazwa_mapy = "Kopalnia"
         elif current_map == 3:
             draw_map_3()
+            nazwa_mapy = "Arena"
         draw_ui()
 
         check_defeat()
