@@ -49,7 +49,7 @@ stdscr.nodelay(True)
 curses.curs_set(0)
 
 player_char = '@'
-blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I","P","G","O","W","V","M"]
+blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I","P","G","O","W","V","M", "╭", "╮","H","J"]
 
 offset = 2
 playing = True
@@ -80,6 +80,10 @@ portfel = 5
 klasa = ""
 nazwa_mapy = "Miasteczko"
 posiadanie_kilof = False
+miecze = 0
+zbroje = 0
+cena_miecz = 75
+cena_zbroja = 40
 
 maxl = len(map_1)
 maxc = len(map_1[0])
@@ -110,7 +114,6 @@ green = curses.color_pair(1)
 white = curses.color_pair(2)
 blue = curses.color_pair(3)
 gray = curses.color_pair(4)
-yellow = curses.color_pair(5)
 
 ui_1 = curses.newwin(5, 51, 2, 143)
 ui_2 = curses.newwin(15, 51, 7, 143)
@@ -123,7 +126,7 @@ ui_5 = curses.newwin(3, 51, 46, 143)
 def interact_npc_1():
     global alert
     stdscr.addstr(39,4, "")
-    alert = " * Witaj przybyszu"
+    alert3 = " * Witaj przybyszu"
     refresh_ui()
 
 def interact_npc_2():
@@ -132,8 +135,48 @@ def interact_npc_2():
     if not posiadanie_kilof:
         inventory.append("kilof")
         posiadanie_kilof = True
-    alert3 = " * Zdobyto kilof"
+        alert3 = " * Zdobyto kilof."
+    else:
+        alert3 = " * Posiadasz już kilof."
+    
     refresh_ui()
+def interact_npc_3():
+    global playing, portfel, miecze, zbroje
+    suma = cena_miecz * miecze + cena_zbroja * zbroje
+    playing = False
+    stdscr.clear()
+    stdscr.addstr( windowl//2-10, windowc//2, "Kupiec")
+    if miecze == 0 and zbroje == 0:
+        stdscr.addstr( windowl//2-6, windowc//2+15, "S - Sprzedaj wszystkie przedmioty (brak)")
+    else:
+        stdscr.addstr( windowl//2-6, windowc//2+15, f"S - Sprzedaj wszystkie przedmioty (${suma})")
+    stdscr.addstr( windowl//2-4, windowc//2+15, "Q - Powrót")
+    stdscr.addstr( windowl//2-6, windowc//2-15, "Przedmioty z przeciwników")
+    stdscr.addstr( windowl//2-4, windowc//2-15, f"Miecz: {miecze}x")
+    stdscr.addstr( windowl//2-4, windowc//2-15, f"Zbroje: {zbroje}x")
+    stdscr.refresh()
+    stdscr.getch()
+    while True:
+        try:
+            c = stdscr.getkey()
+        except:
+            c = ''
+        if c == "q":
+            playing = True
+            clear_ui()
+            draw_ui()
+            refresh_ui()
+            break
+        elif c == "s":
+            portfel += suma
+            miecze = 0
+            zbroje = 0
+            playing = True
+            clear_ui()
+            draw_ui()
+            refresh_ui()
+            break
+    
 def interact_kopalnia():
     global portfel, food_bar
     portfel += 5
@@ -255,17 +298,21 @@ def draw_map_3():
 
 def move(c):
     # Poruszanie graczem (WSAD)
-    global player_y, player_x, current_map
+    global player_y, player_x, current_map, alert3
     current_map_data = maps[current_map] # Poruszanie się w zależności od mapy
     
     if c == 'w' and current_map_data[player_y-1][player_x] not in blocking:
         player_y -= 1
+        alert3 = ""
     elif c == 'a' and current_map_data[player_y][player_x-1] not in blocking:
         player_x -= 1
+        alert3 = ""
     elif c == 'd' and current_map_data[player_y][player_x+1] not in blocking:
         player_x += 1
+        alert3 = ""
     elif c == 's' and current_map_data[player_y+1][player_x] not in blocking:
         player_y += 1
+        alert3 = ""
     
     # Zmiana mapy oraz pozycji gracza
     if current_map == 1 and player_x == 1 and player_y in [16,17,18]:
@@ -658,13 +705,15 @@ def main():
                 interact_npc_1()
             elif current_map == 2 and player_x in [21,22] and player_y in [11,10]:
                 interact_npc_2()
+            elif current_map == 2 and player_x in [67,68] and player_y in [7,8]:
+                interact_npc_3()
             
             elif current_map == 2 and player_x in [45,46,47] and player_y in [22,23,24]:
                 if posiadanie_kilof:
                     interact_kopalnia()
                     alert3 = ""
                 else:
-                    alert3 = " * Nie posiadasz kilofa."
+                    alert3 = " * Nie posiadasz kilofu."
                 
                 
             elif current_map == 1 and player_x in [95,96] and player_y in [31,32]:
