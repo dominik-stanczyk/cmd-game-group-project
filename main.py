@@ -49,7 +49,7 @@ stdscr.nodelay(True)
 curses.curs_set(0)
 
 player_char = '@'
-blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I","P","G","O","W","V","M", "╭", "╮","H","J"]
+blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I","P","G","O","W","V","M", "╭", "╮","H","J", "$", "i"]
 
 offset = 2
 playing = True
@@ -57,13 +57,14 @@ current_map = 1
 inventory = []
 
 alert = " * Poruszaj się za pomocą WSAD."
-alert2= " * Interakcje z potworami"
+alert1 = " * Naciśnij P aby przerwać rozgrywkę."
+alert2= " "
 alert3= " "
 alert4= " "
 alert5= " "
 alert6= " "
 alert7= " "
-alert1 = " * Naciśnij P aby przerwać rozgrywkę."
+
     
 items = []
 defeat_text = ""
@@ -78,13 +79,14 @@ attack_bar_symbol = "╇"
 miecz = "miecz"
 portfel = 5
 klasa = ""
-nazwa_mapy = "Miasteczko"
+nazwa_mapy = "Wieś"
 posiadanie_kilof = False
 miecze = 0
 zbroje = 0
 cena_miecz = 75
 cena_zbroja = 40
-
+przeszukano_skrzynie_1 = False
+posiadanie_wytrych = False
 maxl = len(map_1)
 maxc = len(map_1[0])
 windowl = curses.LINES
@@ -153,7 +155,7 @@ def interact_npc_3():
     stdscr.addstr( windowl//2-4, windowc//2+15, "Q - Powrót")
     stdscr.addstr( windowl//2-6, windowc//2-15, "Przedmioty z przeciwników")
     stdscr.addstr( windowl//2-4, windowc//2-15, f"Miecz: {miecze}x")
-    stdscr.addstr( windowl//2-4, windowc//2-15, f"Zbroje: {zbroje}x")
+    stdscr.addstr( windowl//2-2, windowc//2-15, f"Zbroje: {zbroje}x")
     stdscr.refresh()
     stdscr.getch()
     while True:
@@ -164,7 +166,7 @@ def interact_npc_3():
         if c == "q":
             playing = True
             clear_ui()
-            draw_ui()
+            draw_ui()   
             refresh_ui()
             break
         elif c == "s":
@@ -176,11 +178,64 @@ def interact_npc_3():
             draw_ui()
             refresh_ui()
             break
-    
+def interact_npc_end():
+    global portfel, alert3, map_1
+    if portfel - 1000 >= 0:
+        alert3 = f" * Aby uciec z tego miejsca musisz mi zapłacić $1000, czy chcesz to zrobić (T/N)?"
+        draw_map_1()
+        refresh_ui()
+        stdscr.refresh()
+        stdscr.getch()
+        
+        while True:
+            try:
+                c = stdscr.getkey()
+            except:
+                c = ''
+            if c == "t":
+            
+                portfel -= 1000
+                alert3 = " * Brama została otwarta, możesz opuścić teren."
+                map_1[2][36] = "┄"
+                map_1[2][37] = " "
+                map_1[2][38] = " "
+                map_1[2][39] = " "
+                map_1[2][40] = "┄"
+                draw_map_1
+                refresh_ui()
+                break
+            elif c == "n":
+                alert3 = " * Przyjdź do mnie, kiedy będziesz gotowy."
+                refresh_ui()
+                break
+    else:
+        alert3 = f" * Aby uciec z tego miejsca musisz mi zapłacić $1000, brakuje ci jeszcze ${1000-portfel} Wróć, kiedy będzie cię stać."
+def ucieczka():
+    global playing
+    playing = False
+    stdscr.clear()
+    stdscr.addstr( windowl//2-2, windowc//2-5, "KONIEC")
+    stdscr.addstr( windowl//2, windowc//2-35, "Jesteś jednym z niewielu, którym udało się uciec z tej krainy. Gratulacje.", gray | curses.A_BOLD)
+    stdscr.addstr( windowl//2+2, windowc//2-7, "Q - wyjście")
+    stdscr.refresh()
+    stdscr.getch()
+    while True:
+        try:
+            c = stdscr.getkey()
+        except:
+            c = ''
+        if c == "q":
+            sys.exit()
 def interact_kopalnia():
-    global portfel, food_bar
-    portfel += 5
-    food_bar -= 1
+    global portfel, food_bar, alert3
+    if food_bar > 3:
+        portfel += 5
+        food_bar -= 1
+        alert3 = f" * Wykopano złoto, stan portfela to ${portfel}."
+        refresh_ui()
+    else:
+        alert3 = " * Jesteś zbyt zmęczony, zjedz coś aby kontynuować."
+        refresh_ui()
     refresh_ui()
 
 def check_defeat():
@@ -198,9 +253,9 @@ def defeat():
     global playing
     playing = False
     stdscr.clear()
-    stdscr.addstr( windowl//2-2, windowc//2, "KONIEC")
+    stdscr.addstr( windowl//2-2, windowc//2-5, "KONIEC")
     stdscr.addstr( windowl//2, windowc//2-8, defeat_text, gray | curses.A_BOLD)
-    stdscr.addstr( windowl//2+2, windowc//2-2, "Q - wyjście")
+    stdscr.addstr( windowl//2+2, windowc//2-7, "Q - wyjście")
     stdscr.refresh()
     stdscr.getch()
     while True:
@@ -232,9 +287,6 @@ def draw_clock(): # Gra działa w około 50 klatkach na sekundę (time.sleep(0.0
     if godzina == 24:
         dzien += 1
         godzina = 0
-    if dzien == 4:
-        playing = False
-    current_time = time.strftime("%H:%M:%S")  # Bieżący czas w formacie godzin:minut:sekund
     ui_5.addstr(1, 3, f"{godzina:02}:{minuta:02}  <Dzień {dzien}>", curses.A_BOLD)  # Wyświetl czas
 
 
@@ -298,21 +350,25 @@ def draw_map_3():
 
 def move(c):
     # Poruszanie graczem (WSAD)
-    global player_y, player_x, current_map, alert3
+    global player_y, player_x, current_map, alert3, alert
     current_map_data = maps[current_map] # Poruszanie się w zależności od mapy
     
     if c == 'w' and current_map_data[player_y-1][player_x] not in blocking:
         player_y -= 1
         alert3 = ""
+        alert = ""
     elif c == 'a' and current_map_data[player_y][player_x-1] not in blocking:
         player_x -= 1
         alert3 = ""
+        alert = ""
     elif c == 'd' and current_map_data[player_y][player_x+1] not in blocking:
         player_x += 1
         alert3 = ""
+        alert = ""
     elif c == 's' and current_map_data[player_y+1][player_x] not in blocking:
         player_y += 1
         alert3 = ""
+        alert = ""
     
     # Zmiana mapy oraz pozycji gracza
     if current_map == 1 and player_x == 1 and player_y in [16,17,18]:
@@ -684,7 +740,7 @@ def rozpocznij_walke(monster):
     refresh_ui()
 
 def main():
-    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy  # dodajemy alert2 jako globalną
+    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy, posiadanie_wytrych, przeszukano_skrzynie_1, portfel, miecze, zbroje, map_2  # dodajemy alert2 jako globalną
     menu()
     while playing:
         # odczytywanie wartości z klawiatury
@@ -707,11 +763,32 @@ def main():
                 interact_npc_2()
             elif current_map == 2 and player_x in [67,68] and player_y in [7,8]:
                 interact_npc_3()
+            elif current_map == 1 and player_x in [42,43,44] and player_y in [1,2]:
+                interact_npc_end()
+            elif current_map == 1 and player_x in [37,38,39] and player_y in [1,2]:
+                ucieczka()
+                
+            elif current_map == 2 and player_x in [2,3,4] and player_y in [2,3]:
+                if not posiadanie_wytrych:
+                    alert3 = " * Zdobyto wytrych."
+                    map_2[2][3] = " "
+                    posiadanie_wytrych = True
+                    draw_map_2()
+                    refresh_ui()
+            elif current_map == 2 and player_x in [11,12,13] and player_y in [32,33]:
+                if posiadanie_wytrych and not przeszukano_skrzynie_1:
+                    portfel += 100
+                    miecze +=3
+                    alert3 = f" * Przeszukano skarb, zdobyto $100 oraz miecz 3x"
+                    przeszukano_skrzynie_1 = True
+                elif not przeszukano_skrzynie_1:
+                    alert3 = " * Skrzynia jest zamknięta."
+                else:
+                    alert3 = " * Skrzynia została już przeszukana."
             
             elif current_map == 2 and player_x in [45,46,47] and player_y in [22,23,24]:
                 if posiadanie_kilof:
                     interact_kopalnia()
-                    alert3 = ""
                 else:
                     alert3 = " * Nie posiadasz kilofu."
                 
@@ -759,7 +836,7 @@ def main():
         # Rysowanie map i UI
         if current_map == 1:
             draw_map_1()
-            nazwa_mapy = "Miasteczko"
+            nazwa_mapy = "Wieś"
         elif current_map == 2:
             draw_map_2()
             nazwa_mapy = "Kopalnia"
