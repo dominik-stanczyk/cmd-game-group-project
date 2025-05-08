@@ -91,7 +91,8 @@ maxl = len(map_1)
 maxc = len(map_1[0])
 windowl = curses.LINES
 windowc = curses.COLS
-
+wytrych = "wytrych"
+wyciągnieto_miecz = False
 
 player_y = 17
 player_x = 69
@@ -535,7 +536,7 @@ def draw_settings(stdscr, selected_option1): #rysowanie wyboru klasy postaci
     stdscr.refresh()
 
 def settings(): # wybor klasy postaci
-    global klasa, portfel
+    global klasa, portfel, armor_bar, attack_bar,health_bar
     # Opcje menu
     settings_options = ["Wojownik","Kupiec","Cywil"]
     
@@ -553,13 +554,23 @@ def settings(): # wybor klasy postaci
         elif key == 10:  # Enter
             if selected_option == 0:  # Zagraj
                 klasa = "Wojownik"
+                armor_bar = 7
+                attack_bar = 7
+                health_bar = 7
                 break
             elif selected_option == 1:
                 klasa = "Kupiec"
                 portfel = 20
+                armor_bar = 5
+                attack_bar = 5
+                health_bar = 5
                 break
             elif selected_option == 2:
                 klasa = "Cywil"
+                armor_bar = 3
+                attack_bar = 3
+                health_bar = 3
+
                 break
         stdscr.clear()
         
@@ -626,13 +637,10 @@ def dod_miecz():
     
     global inventory, posiadanie_miecz, alert
     posiadanie_miecz = True
-    if "miecz" in inventory:
-    
-        alert = " * masz juz miecz"
-    else:    
-        alert = " * wyciągnięto miecz ze skały"
-        x = "miecz"
-        inventory.append(x)
+    alert = " * wyciągnięto miecz ze skały"
+    x = "miecz"
+    inventory.append(x)
+    map_1[23][38] = " "
 
 
 
@@ -740,7 +748,7 @@ def rozpocznij_walke(monster):
     refresh_ui()
 
 def main():
-    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy, posiadanie_wytrych, przeszukano_skrzynie_1, portfel, miecze, zbroje, map_2  # dodajemy alert2 jako globalną
+    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy, posiadanie_wytrych,wyciągnieto_miecz, przeszukano_skrzynie_1, portfel, miecze, zbroje, map_2,inventory  # dodajemy alert2 jako globalną
     menu()
     while playing:
         # odczytywanie wartości z klawiatury
@@ -771,6 +779,7 @@ def main():
             elif current_map == 2 and player_x in [2,3,4] and player_y in [2,3]:
                 if not posiadanie_wytrych:
                     alert3 = " * Zdobyto wytrych."
+                    inventory.append(wytrych)
                     map_2[2][3] = " "
                     posiadanie_wytrych = True
                     draw_map_2()
@@ -779,6 +788,9 @@ def main():
                 if posiadanie_wytrych and not przeszukano_skrzynie_1:
                     portfel += 100
                     miecze +=3
+                    inventory.append(miecz)
+                    inventory.append(miecz)
+                    inventory.append(miecz)
                     alert3 = f" * Przeszukano skarb, zdobyto $100 oraz miecz 3x"
                     przeszukano_skrzynie_1 = True
                 elif not przeszukano_skrzynie_1:
@@ -797,8 +809,9 @@ def main():
                 dod_jedz()
             elif current_map == 1 and player_x in [91,92] and player_y in [31,32]:
                 miks_lecz()
-            elif current_map == 1 and player_x in [37,38,39] and player_y in [22,23,24]:
+            elif current_map == 1 and player_x in [37,38,39] and player_y in [22,23,24] and wyciągnieto_miecz == False:
                 dod_miecz()
+                wyciągnieto_miecz = True
             elif current_map == 1 and player_x in [81,82,83] and player_y in [8,9,10]:
                 encountered_monster = Goblin()
                 alert = f"Naprzeciw Ciebie stoi {encountered_monster.name} (lvl {encountered_monster.level})"
