@@ -95,6 +95,12 @@ windowl = curses.LINES
 windowc = curses.COLS
 wytrych = "wytrych"
 wyciągnieto_miecz = False
+posiadanie_kubek = False
+current_quest = 0
+pokonano_wiedzma = 0
+pokonano_zombie = 0
+pokonano_wojownik = 0
+quest_uruchomiony = False
 
 player_y = 17
 player_x = 69
@@ -215,6 +221,53 @@ def interact_npc_3():
             draw_ui()
             refresh_ui()
             break
+def interact_npc_4():
+    global alert3
+    alert3 = " * Witaj przybyszu."
+    draw_map_1()
+    refresh_ui()
+def interact_npc_quests():
+    global alert3,alert4,portfel,current_quest, alert7,map_3,quest_uruchomiony
+    if current_quest == 0:
+        alert3 = " * Witaj, mam dla ciebie kilka zadań. Musisz mi pokazać, że jesteś tym właściwym."
+        alert4 = " * Przynieś mi zaginiony kubek. Słyszałem, że zaginął gdzieś na północy."
+        alert7 = " * Zdobądź stary kubek, podobno znajduje się na północy krainy."
+        map_3[10][110] = "u"
+        quest_uruchomiony = True
+    elif current_quest == 1:
+        inventory.remove("kubek")
+        alert3 = " * Widzę, że udało ci się zdobyć kubek. Znaczy on dla mnie bardzo wiele. Oto twoja zapłata ($150)"
+        portfel += 150
+        current_quest +=1
+    elif current_quest == 2:
+        alert7 = ""
+        alert3 = " * Twoim kolejnym zadaniem będzie zabicie 3 wiedźm."
+        alert7 = " * Zabij 3 wiedźmy."
+        current_quest += 1
+    elif current_quest == 3:    
+        if pokonano_wiedzma >= 3:
+            alert3 = " * Udało ci się wykonać zadanie, oto zapłata ($200)."
+            alert7 = ""
+            current_quest +=1
+            portfel += 200
+        else:
+            alert3 = f" * Wróć, kiedy pokonasz 3 wiedźmy."
+    elif current_quest == 4:
+        alert3 = " * Twoim ostatnim zadaniem będzie pokonanie 2 wojowników."
+        alert7 = " * Pokonaj 2 wojowników."
+        current_quest +=1
+    elif current_quest == 5:
+        if pokonano_wojownik >= 2:
+            alert3 = " * Udało ci się wykonać zadanie, oto zapłata ($300)."
+            portfel += 300
+            alert7 = ""
+            current_quest +=1
+        else:
+            alert3 = " * Przyjdź, kiedy pokonasz 2 wojowników."
+    elif current_quest == 6:
+        alert3 = " * Wykonałeś już wszystkie zadania."
+            
+        
 def interact_npc_end():
     global portfel, alert3, map_1
     if portfel - 1000 >= 0:
@@ -554,15 +607,15 @@ def menu():
             
             elif selected_option == 1:
                 stdscr.clear()
-                stdscr.addstr( 4, 5, " - INFORMACJE, wciśnij B aby powrócić \n" \
-                    "WSAD - poruszanie postacią \n" \
-                    "1 - użycie mikstury leczenia \n" \
-                    "2 - założenie zbroi \n" \
-                    "E - interakcja z NPCtami i potworami \n" 
-                    "T/N - Opcja tak/nie 'zatwierdzenie lub odrzucenie interakcji' \n" \
-                    "P - pauza \n" \
-                    "Q - wyjście \n" \
-                    "B - powrót do poprzedniego okna")
+                stdscr.addstr( 4, 5, " - INFORMACJE, wciśnij B aby powrócić")
+                stdscr.addstr( 6,5, " - WSAD - poruszanie postacią")
+                stdscr.addstr( 8,5, " - 1 - użycie mikstury leczenia")
+                stdscr.addstr( 10,5, " - 2 - założenie zbroi")
+                stdscr.addstr( 12,5, " - E - interakcja z NPCtami i potworami.") 
+                stdscr.addstr( 14,5, " - T/N - Opcja tak/nie (zatwierdzenie lub odrzucenie interakcji)")
+                stdscr.addstr( 16,5, " - P - pauza")
+                stdscr.addstr( 18,5, " - Q - wyjście")
+                stdscr.addstr( 20,5, " - B - powrót do poprzedniego okna")
                 stdscr.refresh()
                 stdscr.getch()
                 while True:
@@ -708,113 +761,8 @@ def dod_miecz():
     inventory.append(x)
     map_1[23][38] = " "
 
-
-
-class Monster:
-    def __init__(self, name, level_range, hp_base, attack_base):
-        self.name = name
-        self.level = random.randint(*level_range)
-        self.hp = hp_base + self.level * 2
-        self.attack = attack_base + self.level * 1
-
-    def get_stats(self):
-        return f"{self.name} lvl {self.level} HP:{self.hp} Atak:{self.attack}"
-
-    def receive_damage(self, damage):
-        self.hp -= damage
-        return self.hp <= 0
-
-    def __str__(self):
-        return self.get_stats()
-
-class Goblin(Monster):
-    def __init__(self):
-        super().__init__("Goblin", (1, 3), 5, 1) # ("Goblina"(1,3) - poziomy
-                                                  # ,5,1) - bazowa liczba hp i ataku
-
-class Ork(Monster):
-    def __init__(self):
-        super().__init__("Ork", (1, 3), 8, 2)
-
-class Wiedzma(Monster):
-    def __init__(self):
-        super().__init__("Wiedźma", (1, 3), 6, 1)
-
-class Wilk(Monster):
-    def __init__(self):
-        super().__init__("Wilk", (1, 3), 5, 2)
-
-def potworki_statystyki():
-    global alert, alert2, alert3, alert4, alert5, alert6, alert7, encountered_monster
-
-    # Losowy potwór
-    potwor_klasy = [Goblin, Ork, Wiedzma, Wilk]
-    potwor = random.choice(potwor_klasy)()
-    encountered_monster = potwor
-
-    # Czyścimy linie
-    stdscr.addstr(39, 4, " " * 60)
-    stdscr.addstr(40, 4, " " * 60)
-    stdscr.addstr(41, 4, " " * 60)
-    stdscr.addstr(42, 4, " " * 60)
-    stdscr.addstr(43, 4, " " * 60)
-    stdscr.addstr(44, 4, " " * 60)
-    stdscr.addstr(45, 4, " " * 60)
-    # Alerty
-    alert = encountered_monster  # pokazujemy statystyki
-    alert2 = ""
-    alert3 = "Czy chcesz walczyć z tym potworem? (y/n)"
-    alert4 = ""
-    alert5 = ""
-    alert6 = ""
-    refresh_ui()
-
-def rozpocznij_walke(monster):
-    global alert, alert2, alert3, alert4, alert5, alert6,alert7, health_bar, attack_bar, inventory, armor_bar
-
-    # Gracz atakuje
-    player_attack_m = attack_bar
-    monster_dead = monster.receive_damage(player_attack_m)
-    alert2 = f"Zaatakowałeś {monster.name} i zadałeś {player_attack_m} obrażeń!"
-    alert = str(monster)
-    refresh_ui()
-    time.sleep(0.5)
-
-    if monster_dead:
-        alert6 = f"{monster.name} pokonany!"
-        drop_choice = random.randint(1, 4)  # Losowanie liczby od 1 do 4
-    
-        if drop_choice == 1:
-            drop = "armor"
-            inventory.append(drop)
-            armor_bar += 2
-            alert7 = "Znaleziono: armor (+2 do pancerza)"
-        elif drop_choice == 2:
-            drop = "weapon"
-            inventory.append(drop)
-            attack_bar += 2
-            alert7 = "Znaleziono: weapon (+2 do ataku)"
-        elif drop_choice == 3:
-            drop = "health_potion"
-            inventory.append(drop)
-            alert7 = "Znaleziono: health potion."
-        elif drop_choice == 4:
-            drop = "speed_potion"
-            inventory.append(drop)
-            alert7 = "Znaleziono: speed potion."
-
-        refresh_ui()
-        return
-
-    # Potwór kontratakuje
-    monster_attack = monster.attack
-    health_bar -= monster_attack
-    alert4 = f"{monster.name} kontratakuje i zadaje {monster_attack} obrażeń!"
-    
-    refresh_ui()
-
 def main():
-    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy, posiadanie_wytrych,wyciągnieto_miecz, przeszukano_skrzynie_1, portfel, miecze, zbroje, map_2,inventory, mikstury_leczenia, health_bar, armor_bar
+    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy, posiadanie_wytrych,wyciągnieto_miecz, przeszukano_skrzynie_1, portfel, miecze, zbroje, map_2,inventory, mikstury_leczenia, health_bar, armor_bar, pokonano_wojownik, pokonano_wiedzma, pokonano_zombie, current_quest, posiadanie_kubek
     menu()
     generate_mob1()
     generate_mob2()
@@ -867,6 +815,18 @@ def main():
                 interact_npc_end()
             elif current_map == 1 and player_x in [37,38,39] and player_y in [1,2]:
                 ucieczka()
+            elif current_map == 1 and player_x in [23,24,25] and player_y in [26,27,28]:
+                interact_npc_4()
+            elif current_map == 1 and player_x in [6,7,8] and player_y in [20,21,22]:
+                interact_npc_quests()
+            elif current_map == 3 and player_x in [109,110,111] and player_y in [9,10,11]:
+                if quest_uruchomiony and not posiadanie_kubek:
+                    map_3[10][110] = " "
+                    alert3 = " * Znaleziono stary kubek"
+                    inventory.append("kubek")
+                    posiadanie_kubek = True
+                    current_quest +=1
+                    alert7 = ""
                 
             elif current_map == 2 and player_x in [2,3,4] and player_y in [2,3]:
                 if not posiadanie_wytrych:
@@ -919,6 +879,7 @@ def main():
                             c = ''
                         if c == "t":
                             if health_bar - 1 > 0:
+                                pokonano_wiedzma += 1
                                 health_bar -=1
                                 alert3 = " * Pokonano wiedźme, odniesiono niewielkie obrażenia."
                                 
@@ -962,6 +923,7 @@ def main():
                             c = ''
                         if c == "t":
                             if health_bar - 2 > 0  and armor_bar -1 > 0:
+                                pokonano_zombie += 1
                                 health_bar -=2
                                 armor_bar -=1
                                 alert3 = " * Pokonano zombie, odniesiono odczuwalne obrażenia."
@@ -1007,6 +969,7 @@ def main():
                             c = ''
                         if c == "t":
                             if health_bar - 4 > 0 and armor_bar -2 > 0:
+                                pokonano_wojownik += 1
                                 health_bar -=4
                                 armor_bar -=2
                                 alert3 = " * Pokonano wojownika, odniesiono poważne obrażenia."
