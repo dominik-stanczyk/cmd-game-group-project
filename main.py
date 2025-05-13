@@ -554,7 +554,15 @@ def menu():
             
             elif selected_option == 1:
                 stdscr.clear()
-                stdscr.addstr( 4, 5, " - INFORMACJE, wciśnij B aby powrócić")
+                stdscr.addstr( 4, 5, " - INFORMACJE, wciśnij B aby powrócić \n" \
+                    "WSAD - poruszanie postacią \n" \
+                    "1 - użycie mikstury leczenia \n" \
+                    "2 - założenie zbroi \n" \
+                    "E - interakcja z NPCtami i potworami \n" 
+                    "T/N - Opcja tak/nie 'zatwierdzenie lub odrzucenie interakcji' \n" \
+                    "P - pauza \n" \
+                    "Q - wyjście \n" \
+                    "B - powrót do poprzedniego okna")
                 stdscr.refresh()
                 stdscr.getch()
                 while True:
