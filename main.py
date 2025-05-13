@@ -49,7 +49,7 @@ stdscr.nodelay(True)
 curses.curs_set(0)
 
 player_char = '@'
-blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I","P","G","O","W","V","M", "╭", "╮","H","J", "$", "i","|","#"]
+blocking = ["┏", "┓", "┃", "━", "┗", "┛", "X", "_","┻", "┳", "┣", "┫", "@","I","P","G","O","W","V","M", "╭", "╮","H","J", "$", "i","|","#","┉","┊","┍","┖","┚","┑","Z","W"]
 
 offset = 2
 playing = True
@@ -81,8 +81,10 @@ portfel = 5
 klasa = ""
 nazwa_mapy = "Wieś"
 posiadanie_kilof = False
+posiadanie_miecz = False
 miecze = 0
 zbroje = 0
+mikstury_leczenia = 0
 cena_miecz = 75
 cena_zbroja = 40
 przeszukano_skrzynie_1 = False
@@ -96,6 +98,13 @@ wyciągnieto_miecz = False
 
 player_y = 17
 player_x = 69
+
+mob1_x = 0
+mob1_y = 0
+mob2_x = 0
+mob2_y = 0
+mob3_x = 0
+mob3_y = 0
 
 czas = 0
 minuta = 30
@@ -124,8 +133,35 @@ ui_3 = curses.newwin(25, 51, 22, 143)
 ui_5 = curses.newwin(3, 51, 46, 143)
 
 
+def generate_mob1():
+    global map_3, mob1_x, mob1_y
+    while True:
+        mob1_x = random.randint(3, 50)
+        mob1_y = random.randint(4, 20)
+        if map_3[mob1_y][mob1_x] == " ":
+            map_3[mob1_y][mob1_x] = "W" #Generuje wiedźmę w losowych koordynatach, sprawdza czy pole jest zajęte
+            break
 
+def generate_mob2():
+    global map_3, mob2_x, mob2_y
+    while True:
+        mob2_x = random.randint(3, 50)
+        mob2_y = random.randint(4, 20)
+        if map_3[mob2_y][mob2_x] == " " and not is_near(mob2_x, mob2_y, mob1_x, mob1_y):
+            map_3[mob2_y][mob2_x] = "Z"
+            break
 
+def generate_mob3():
+    global map_3, mob3_x, mob3_y
+    while True:
+        mob3_x = random.randint(3, 50)
+        mob3_y = random.randint(4, 20)
+        if map_3[mob3_y][mob3_x] == " " and not is_near(mob3_x, mob3_y, mob1_x, mob1_y) and not is_near(mob3_x, mob3_y, mob2_x, mob2_y):
+            map_3[mob3_y][mob3_x] = "@"
+            break
+
+def is_near(x1, y1, x2, y2):
+    return abs(x1 - x2) <= 1 and abs(y1 - y2) <= 1 #zwraca odległość odległość pomiędzy potworami
 def interact_npc_1():
     global alert
     stdscr.addstr(39,4, "")
@@ -138,7 +174,7 @@ def interact_npc_2():
     if not posiadanie_kilof:
         inventory.append("kilof")
         posiadanie_kilof = True
-        alert3 = " * Zdobyto kilof."
+        alert3 = " * Witaj, jestem górnikiem oto kilof, którym możesz zarobić swoje pierwsze pieniądze."
     else:
         alert3 = " * Posiadasz już kilof."
     
@@ -331,8 +367,14 @@ def draw_map_2():
                 stdscr.addch(i+offset, j+offset, map_2[i][j], white )
     stdscr.addch(player_y+offset, player_x+offset, player_char, green)
     
+    stdscr.addstr(39,4, alert, gray)
+    stdscr.addstr(40,4, alert2, gray)
     stdscr.addstr(41,4, alert3, gray)
     stdscr.addstr(42,4, alert4, gray)
+    stdscr.addstr(43,4, alert5, gray)
+    stdscr.addstr(44,4, alert6, gray)
+    stdscr.addstr(45,4, alert7, gray)
+    stdscr.addstr(46,4, alert1, gray)
     
 def draw_map_3():
     for i in range(maxl):
@@ -349,26 +391,39 @@ def draw_map_3():
                 stdscr.addch(i+offset, j+offset, map_3[i][j], white )
     stdscr.addch(player_y+offset, player_x+offset, player_char, green)
 
+    stdscr.addstr(39,4, alert, gray)
+    stdscr.addstr(40,4, alert2, gray)
+    stdscr.addstr(41,4, alert3, gray)
+    stdscr.addstr(42,4, alert4, gray)
+    stdscr.addstr(43,4, alert5, gray)
+    stdscr.addstr(44,4, alert6, gray)
+    stdscr.addstr(45,4, alert7, gray)
+    stdscr.addstr(46,4, alert1, gray)
+
 def move(c):
     # Poruszanie graczem (WSAD)
-    global player_y, player_x, current_map, alert3, alert
+    global player_y, player_x, current_map, alert3, alert, alert4
     current_map_data = maps[current_map] # Poruszanie się w zależności od mapy
     
     if c == 'w' and current_map_data[player_y-1][player_x] not in blocking:
         player_y -= 1
         alert3 = ""
+        alert4 = ""
         alert = ""
     elif c == 'a' and current_map_data[player_y][player_x-1] not in blocking:
         player_x -= 1
         alert3 = ""
+        alert4 = ""
         alert = ""
     elif c == 'd' and current_map_data[player_y][player_x+1] not in blocking:
         player_x += 1
         alert3 = ""
+        alert4 = ""
         alert = ""
     elif c == 's' and current_map_data[player_y+1][player_x] not in blocking:
         player_y += 1
         alert3 = ""
+        alert4 = ""
         alert = ""
     
     # Zmiana mapy oraz pozycji gracza
@@ -412,6 +467,9 @@ def draw_ui():
             ui_3.addch(i,j, ui_3_map[i][j])
     ui_3.addstr(2,2, "Inventory :", curses.A_UNDERLINE | curses.A_BOLD)
     ui_3.addstr(4,2,f"{inventory}")
+    ui_3.addstr(6,2,f"Miecze przeciwników: {miecze}x")
+    ui_3.addstr(8,2,f"Zbroje przeciwników: {zbroje}x")
+    ui_3.addstr(10,2,f"Mikstury leczenia: {mikstury_leczenia}x")
 
     for i in range(len(ui_5_map)):
         for j in range(len(ui_5_map[0])):
@@ -619,8 +677,8 @@ def dod_jedz():
 def miks_lecz():
     global health_bar, portfel, alert
     if (portfel - 2) >= 0:
-        portfel -= 2 
         if health_bar <=9: 
+            portfel -= 2
             x = health_bar +1
             global alert
             stdscr.addstr(39,4, "")
@@ -635,9 +693,9 @@ def miks_lecz():
 
 def dod_miecz():
     
-    global inventory, posiadanie_miecz, alert
+    global inventory, posiadanie_miecz, alert3
     posiadanie_miecz = True
-    alert = " * wyciągnięto miecz ze skały"
+    alert3 = " * wyciągnięto miecz ze skały"
     x = "miecz"
     inventory.append(x)
     map_1[23][38] = " "
@@ -748,8 +806,11 @@ def rozpocznij_walke(monster):
     refresh_ui()
 
 def main():
-    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy, posiadanie_wytrych,wyciągnieto_miecz, przeszukano_skrzynie_1, portfel, miecze, zbroje, map_2,inventory  # dodajemy alert2 jako globalną
+    global playing, encountered_monster, alert2, alert3, alert4, alert5, alert6, alert7, nazwa_mapy, posiadanie_wytrych,wyciągnieto_miecz, przeszukano_skrzynie_1, portfel, miecze, zbroje, map_2,inventory, mikstury_leczenia, health_bar, armor_bar
     menu()
+    generate_mob1()
+    generate_mob2()
+    generate_mob3()
     while playing:
         # odczytywanie wartości z klawiatury
         try:
@@ -763,6 +824,29 @@ def main():
 
         elif c == 'p':
             pause_game()
+        elif c == '1':
+            if mikstury_leczenia-1 >= 0:
+                if health_bar +3 <= 9:
+                    mikstury_leczenia-=1
+                    health_bar +=3
+                    alert3 = " * Użyto mikstury leczenia, przywrócono 3 punkty zdrowia."
+                else:
+                    health_bar = 9
+                    alert4 = " * Osiągnięto pełen poziom zdrowia."
+            else:
+                alert4 = " * Nie posiadasz żadnych mikstur."
+        
+        elif c == '2':
+            if zbroje-1 >= 0:
+                if armor_bar+3 <=9:
+                    zbroje-=1
+                    armor_bar +=3
+                    alert3 = " * Założono zbroję, dodano 3 punkty ochrony."
+                elif armor_bar + 3 > 9:
+                    armor_bar = 9
+                    alert4 = " * Osiągnięto pełną zbroję."
+            else:
+                alert4 = " * Nie posiadasz żadnych zbroi."
 
         elif c == 'e':  # Interakcja z przedmiotami, npcami, potworami
             if current_map == 1 and player_x in [20,21,22] and player_y in [25,26,27]:
@@ -788,11 +872,10 @@ def main():
                 if posiadanie_wytrych and not przeszukano_skrzynie_1:
                     portfel += 100
                     miecze +=3
-                    inventory.append(miecz)
-                    inventory.append(miecz)
-                    inventory.append(miecz)
                     alert3 = f" * Przeszukano skarb, zdobyto $100 oraz miecz 3x"
                     przeszukano_skrzynie_1 = True
+                    inventory.remove("wytrych")
+                    posiadanie_wytrych = False
                 elif not przeszukano_skrzynie_1:
                     alert3 = " * Skrzynia jest zamknięta."
                 else:
@@ -812,40 +895,142 @@ def main():
             elif current_map == 1 and player_x in [37,38,39] and player_y in [22,23,24] and wyciągnieto_miecz == False:
                 dod_miecz()
                 wyciągnieto_miecz = True
-            elif current_map == 1 and player_x in [81,82,83] and player_y in [8,9,10]:
-                encountered_monster = Goblin()
-                alert = f"Naprzeciw Ciebie stoi {encountered_monster.name} (lvl {encountered_monster.level})"
-                alert3 = "Czy chcesz walczyć? (y/n)"
-                refresh_ui()
-            elif current_map == 1 and player_x in [68,69,70] and player_y in [14,15,16]:
-                encountered_monster = Ork()
-                alert = f"Naprzeciw Ciebie stoi {encountered_monster.name} (lvl {encountered_monster.level})"
-                alert3 = "Czy chcesz walczyć? (y/n)"
-                refresh_ui()
-            elif current_map == 1 and player_x in [91,92,93] and player_y in [16,17,18]:
-                encountered_monster = Wiedzma()
-                alert = f"Naprzeciw Ciebie stoi {encountered_monster.name} (lvl {encountered_monster.level})"
-                alert3 = "Czy chcesz walczyć? (y/n)"
-                refresh_ui()
-            elif current_map == 1 and player_x in [80,81,82] and player_y in [22,23,24]:
-                encountered_monster = Wilk()
-                alert = f"Naprzeciw Ciebie stoi {encountered_monster.name} (lvl {encountered_monster.level})"
-                alert3 = "Czy chcesz walczyć? (y/n)"
-                refresh_ui()
+            elif current_map == 3 and player_x in [mob1_x-1,mob1_x,mob1_x+1] and player_y in [mob1_y-1,mob1_y,mob1_y+1]:
+                if posiadanie_miecz:
+                    alert3 = " * Czy chcesz walczyć z napotkanym przeciwnikiem (T/N)"
 
-        elif c == 'y':
-            if encountered_monster:
-                rozpocznij_walke(encountered_monster)
-                encountered_monster = None
-                alert5 = "Zaczynamy mordobicie!"
-                refresh_ui()
+                    draw_map_3()
+                    refresh_ui()
+                    stdscr.refresh()
+                    stdscr.getch()
+                    
+                    while True:
+                        try:
+                            c = stdscr.getkey()
+                        except:
+                            c = ''
+                        if c == "t":
+                            if health_bar - 1 > 0:
+                                health_bar -=1
+                                alert3 = " * Pokonano wiedźme, odniesiono niewielkie obrażenia."
+                                
+                                drop = random.randint(1, 2)
+                                if drop == 1:
+                                    mikstury_leczenia +=1
+                                    alert4 = " * Zdobyto miksturę leczenia."
+                                elif drop == 2:
+                                    zbroje +=2
+                                    alert4 = " * Zdobyto zbroję."
+                                
+                                map_3[mob1_y][mob1_x] = " "
+                                generate_mob1()
+                                draw_map_3
+                                refresh_ui()
+                                break
+                            else:
+                                alert3 = " * Nie jesteś przygotowany, aby walczyć."
+                                draw_map_3
+                                refresh_ui()
+                                break
+                        elif c == "n":
+                            alert3 = " * Zrezygnowano z walki."
+                            refresh_ui()
+                            break
+                else:
+                    alert3 =" * Aby walczyć potrzebujesz miecza."
+            elif current_map == 3 and player_x in [mob2_x-1,mob2_x,mob2_x+1] and player_y in [mob2_y-1,mob2_y,mob2_y+1]:
+                if posiadanie_miecz:
+                    alert3 = " * Czy chcesz walczyć z napotkanym przeciwnikiem (T/N)"
 
-        elif c == 'n':
-            if encountered_monster:
-                alert5 = "Zrezygnowałeś z walki."
-                encountered_monster = None
-                refresh_ui()
+                    draw_map_3()
+                    refresh_ui()
+                    stdscr.refresh()
+                    stdscr.getch()
+                    
+                    while True:
+                        try:
+                            c = stdscr.getkey()
+                        except:
+                            c = ''
+                        if c == "t":
+                            if health_bar - 2 > 0  and armor_bar -1 > 0:
+                                health_bar -=2
+                                armor_bar -=1
+                                alert3 = " * Pokonano zombie, odniesiono odczuwalne obrażenia."
+                                
+                                drop = random.randint(1, 2)
+                                if drop == 1:
+                                    alert4 = " * Zdobyto miecz."
+                                    miecze +=1
+                                elif drop == 2:
+                                    zbroje +=2
+                                    alert4 = " * Zdobyto zbroję."
+                                
+                                map_3[mob2_y][mob2_x] = " "
+                                generate_mob2()
+                                draw_map_3
+                                refresh_ui()
+                                break
+                            else:
+                                alert3 = " * Nie jesteś przygotowany, aby walczyć."
+                                draw_map_3
+                                refresh_ui()
+                                break
+                        elif c == "n":
+                            alert3 = " * Zrezygnowano z walki."
+                            refresh_ui()
+                            break
+                else:
+                    alert3 =" * Aby walczyć potrzebujesz miecza."
+            
+            elif current_map == 3 and player_x in [mob3_x-1,mob3_x,mob3_x+1] and player_y in [mob3_y-1,mob3_y,mob3_y+1]:
+                if posiadanie_miecz:
+                    alert3 = " * Czy chcesz walczyć z napotkanym przeciwnikiem (T/N)"
 
+                    draw_map_3()
+                    refresh_ui()
+                    stdscr.refresh()
+                    stdscr.getch()
+                    
+                    while True:
+                        try:
+                            c = stdscr.getkey()
+                        except:
+                            c = ''
+                        if c == "t":
+                            if health_bar - 4 > 0 and armor_bar -2 > 0:
+                                health_bar -=4
+                                armor_bar -=2
+                                alert3 = " * Pokonano wojownika, odniesiono poważne obrażenia."
+                                
+                                drop = random.randint(1, 3)
+                                if drop == 1:
+                                    mikstury_leczenia +=2
+                                    alert4 = " * Zdobyto miksturę leczenia."
+                                elif drop == 2:
+                                    zbroje +=4
+                                    alert4 = " * Zdobyto zbroję."
+                                elif drop == 3:
+                                    alert4 = " * Zdobyto miecz."
+                                    miecze +=1
+                                
+                                map_3[mob3_y][mob3_x] = " "
+                                generate_mob3()
+                                draw_map_3
+                                refresh_ui()
+                                break
+                            else:
+                                alert3 = " * Nie jesteś przygotowany, aby walczyć."
+                                draw_map_3
+                                refresh_ui()
+                                break
+                        elif c == "n":
+                            alert3 = " * Zrezygnowano z walki."
+                            refresh_ui()
+                            break
+                else:
+                    alert3 =" * Aby walczyć potrzebujesz miecza."
+            
         # Rysowanie map i UI
         if current_map == 1:
             draw_map_1()
