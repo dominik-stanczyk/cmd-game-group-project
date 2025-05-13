@@ -501,6 +501,7 @@ def move(c):
         
     
 def draw_ui():
+    global klasa
     for i in range(len(ui_1_map)):
         for j in range(len(ui_1_map[0])):
             ui_1.addch(i,j, ui_1_map[i][j])
@@ -509,12 +510,13 @@ def draw_ui():
     for i in range(len(ui_2_map)):
         for j in range(len(ui_2_map[0])):
             ui_2.addch(i,j, ui_2_map[i][j])
-    ui_2.addstr(2,3,f"[{player_x}], [{player_y}]")
-    ui_2.addstr(4,3,f"health: {health_bar_symbol*health_bar}")
-    ui_2.addstr(6,3,f"Food: {food_bar_symbol*food_bar}")
-    ui_2.addstr(8,3,f"Armor: {armor_bar_symbol*armor_bar}")
-    ui_2.addstr(10,3,f"Attack: {attack_bar_symbol*attack_bar}")
-    ui_2.addstr(12,3,f"Portfel: ${portfel}.00")
+    ui_2.addstr(1,3,f"[{player_x}], [{player_y}]")
+    ui_2.addstr(3,3,f"klasa: {klasa}")
+    ui_2.addstr(5,3,f"health: {health_bar_symbol*health_bar}")
+    ui_2.addstr(7,3,f"Food: {food_bar_symbol*food_bar}")
+    ui_2.addstr(9,3,f"Armor: {armor_bar_symbol*armor_bar}")
+    ui_2.addstr(11,3,f"Attack: {attack_bar_symbol*attack_bar}")
+    ui_2.addstr(13,3,f"Portfel: ${portfel}.00")
     for i in range(len(ui_3_map)):
         for j in range(len(ui_3_map[0])):
             ui_3.addch(i,j, ui_3_map[i][j])
