@@ -168,11 +168,6 @@ def generate_mob3():
 
 def is_near(x1, y1, x2, y2):
     return abs(x1 - x2) <= 1 and abs(y1 - y2) <= 1 #zwraca odległość odległość pomiędzy potworami
-def interact_npc_1():
-    global alert
-    stdscr.addstr(39,4, "")
-    alert3 = " * Witaj przybyszu"
-    refresh_ui()
 
 def interact_npc_2():
     global alert3, inventory, posiadanie_kilof
@@ -222,8 +217,54 @@ def interact_npc_3():
             refresh_ui()
             break
 def interact_npc_4():
-    global alert3
-    alert3 = " * Witaj przybyszu."
+    global alert3, alert4, alert6, portfel, attack_bar, health_bar
+
+    if "ZENKAIBOOST" in inventory:
+        alert3 = " * Już zakupiłeś ZENKAI BOOSTA!"
+        alert4 = " "
+        alert6 = " * Nie można kupić go drugi raz."
+        draw_map_1()
+        refresh_ui()
+        time.sleep(2)  # chwilowe pokazanie komunikatu
+        alert3 = alert4 = alert6 = ""
+        refresh_ui()
+        return
+    
+    alert3 = " * Witaj przybyszu, czy chcesz zakupić u mnie nielegalnego boosta do twoich statystyk?"
+    alert4 = " * Legendarny ZENKAI BOOST."
+    alert6 = " * Czy chcesz zakupić ZENKAI BOOSTA? (T/N)"
+    
+
+    draw_map_1()
+    refresh_ui()
+
+    while True:
+        key = stdscr.getch()
+
+        if key in [ord('T'), ord('t')]:
+            if portfel >= 100:
+                portfel -= 100
+                attack_bar += 15
+                health_bar += 15
+                inventory.append("ZENKAIBOOST")
+                alert6 = " * Zakupiono ZENKAI BOOST!"
+                alert3 = alert4 = "" 
+                
+                clear_ui()  
+                refresh_ui() 
+            else:
+                alert6 = " * Nie masz wystarczająco pieniędzy!"
+                alert3 = alert4 = ""
+                clear_ui()  
+                refresh_ui()
+            break
+        elif key in [ord('N'), ord('n')]:
+            alert6 = " * W takim razie trzymaj się!"
+            alert3 = alert4 = ""
+            clear_ui()  
+            refresh_ui()
+            break
+
     draw_map_1()
     refresh_ui()
 def interact_npc_quests():
@@ -455,28 +496,32 @@ def draw_map_3():
 
 def move(c):
     # Poruszanie graczem (WSAD)
-    global player_y, player_x, current_map, alert3, alert, alert4
+    global player_y, player_x, current_map, alert3, alert, alert4, alert6
     current_map_data = maps[current_map] # Poruszanie się w zależności od mapy
     
     if c == 'w' and current_map_data[player_y-1][player_x] not in blocking:
         player_y -= 1
         alert3 = ""
         alert4 = ""
+        alert6 = ""
         alert = ""
     elif c == 'a' and current_map_data[player_y][player_x-1] not in blocking:
         player_x -= 1
         alert3 = ""
         alert4 = ""
+        alert6 = ""
         alert = ""
     elif c == 'd' and current_map_data[player_y][player_x+1] not in blocking:
         player_x += 1
         alert3 = ""
         alert4 = ""
+        alert6 = ""
         alert = ""
     elif c == 's' and current_map_data[player_y+1][player_x] not in blocking:
         player_y += 1
         alert3 = ""
         alert4 = ""
+        alert6 = ""
         alert = ""
     
     # Zmiana mapy oraz pozycji gracza
